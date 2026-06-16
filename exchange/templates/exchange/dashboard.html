@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trades Engine Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .table-responsive { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">Trades Exchange</span>
+        <span class="navbar-text text-white">Logged in as: <strong>{{ request.user.username }}</strong></span>
+    </div>
+</nav>
+
+<div class="container">
+    {% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for msg in messages %}
+            <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card p-4 bg-white text-dark h-100 d-flex flex-column justify-content-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="text-muted text-uppercase small">Available Cash Balance</h5>
+                        <h2 class="display-6 fw-bold mb-0">${{ wlt.bal }}</h2>
+                    </div>
+                    <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#fundModal">
+                        + Add Funds
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4 bg-dark text-white">
+                <h5 class="text-muted text-uppercase small text-white-50">Execute New Order</h5>
+                <form action="{% url 'execute_order' %}" method="POST" class="row g-2 mt-1">
+                    {% csrf_token %}
+                    <div class="col-sm-6">
+                        <select name="ast_id" class="form-select bg-secondary text-white border-0" required>
+                            <option value="" disabled selected>Select Asset</option>
+                            {% for ast in asts %}
+                            <option value="{{ ast.id }}">{{ ast.tkr }} — ${{ ast.prc }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-3">
+                        <input type="number" name="qty" class="form-control bg-secondary text-white border-0" placeholder="Qty" min="1" required>
+                    </div>
+                    <div class="col-sm-3">
+                        <select name="act" class="form-select bg-secondary text-white border-0" required>
+                            <option value="BUY">BUY</option>
+                            <option value="SELL">SELL</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">Submit Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-7">
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">Live Market Prices</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ticker</th>
+                                <th>Company Name</th>
+                                <th class="text-end">Current Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ast in asts %}
+                            <tr>
+                                <td><span class="badge bg-secondary px-2 py-1">{{ ast.tkr }}</span></td>
+                                <td>{{ ast.name }}</td>
+                                <td class="text-end fw-bold">${{ ast.prc }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">Your Portfolio Holdings</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Asset</th>
+                                <th>Shares Owned</th>
+                                <th class="text-end">Market Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ptf %}
+                            <tr>
+                                <td><span class="badge bg-success px-2 py-1">{{ item.ast.tkr }}</span></td>
+                                <td>{{ item.qty }}</td>
+                                <td class="text-end fw-bold">${{ item.ast.prc }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-muted text-center py-3">No assets owned yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">Recent Order Execution Logs</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Action</th>
+                                <th>Qty</th>
+                                <th>Status</th>
+                                <th class="text-end">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ord in ords %}
+                            <tr>
+                                <td>
+                                    <span class="fw-bold {% if ord.act == 'BUY' %}text-primary{% else %}text-danger{% endif %}">
+                                        {{ ord.act }} {{ ord.ast.tkr }}
+                                    </span>
+                                block</td>
+                                <td>{{ ord.qty }}</td>
+                                <td>
+                                    <span class="badge {% if ord.st == 'FILLED' %}bg-success{% elif ord.st == 'FAILED' %}bg-danger{% else %}bg-warning{% endif %}">
+                                        {{ ord.st }}
+                                    </span>
+                                </td>
+                                <td class="text-end text-muted small">{{ ord.dt|date:"H:i:s" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-muted text-center py-3">No recent orders.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="fundModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light border-0">
+                <h5 class="modal-title fw-bold">Deposit Funds</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'add_funds' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <label class="form-label text-muted small fw-bold">DEPOSIT AMOUNT (USD)</label>
+                    <input type="number" name="amount" class="form-control form-control-lg bg-light" min="1" step="0.01" placeholder="1000.00" required>
+                </div>
+                <div class="modal-footer border-0 bg-light">
+                    <button type="submit" class="btn btn-success w-100 fw-bold">Confirm Deposit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
