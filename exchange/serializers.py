@@ -1,10 +1,17 @@
 from rest_framework import serializers
-from .models import Asset, Wallet, Order, Portfolio
+from .models import Asset, Wallet, Order, Portfolio, Signal
+
+class SignalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Signal
+        fields = ["vol", "rec", "dt"]
 
 class AssetSerializer(serializers.ModelSerializer):
+    sig = SignalSerializer(read_only=True)
+
     class Meta:
         model = Asset
-        fields = "__all__"
+        fields = ["id", "tkr", "name", "prc", "sig"]
 
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:

@@ -31,3 +31,9 @@ class Portfolio(models.Model):
 
     class Meta:
         unique_together = ("usr", "ast")
+        
+class Signal(models.Model):
+    ast = models.OneToOneField(Asset, on_delete=models.CASCADE, related_name="sig")
+    vol = models.IntegerField()
+    rec = models.CharField(max_length=10)
+    dt = models.DateTimeField(auto_now=True)
