@@ -5,6 +5,8 @@ from django.contrib import messages
 from .models import Asset, Wallet, Order, Portfolio
 from .utils import sync_market_prices
 from decimal import Decimal
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
 
 
 @login_required
@@ -127,3 +129,7 @@ def add_funds(request):
         messages.error(request, "Invalid amount provided")
         
     return redirect("dashboard")
+
+class DashboardView(LoginRequiredMixin, TemplateView):
+    template_name = "exchange/index.html"
+    login_url = "/admin/login/"

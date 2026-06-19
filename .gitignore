@@ -1,7 +1,14 @@
+# Celery Beat
+celerybeat-schedule
+celerybeat-schedule.bak
+celerybeat-schedule.dat
+celerybeat-schedule.dir
+celerybeat.pid
+
+# Python & Django
 __pycache__/
 *.py[cod]
-*$py.class
 *.sqlite3
+
+# Environment
 .env
-venv/
-env/

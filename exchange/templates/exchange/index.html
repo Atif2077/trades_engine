@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Engine Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span class="navbar-brand mb-0 h1">Trades Engine - AI Signals</span>
+            <div class="d-flex align-items-center">
+                <a href="/" class="btn btn-sm btn-outline-light fw-bold me-3">&larr; Back to Trading</a>
+                <span class="navbar-text text-white">Logged in as: <strong>{{ request.user.username }}</strong></span>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-5">
+        <h2 class="mb-4">Live Market & AI Signals</h2>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Asset Name</th>
+                        <th>Price</th>
+                        <th>AI Recommendation</th>
+                        <th>Volatility (1-10)</th>
+                    </tr>
+                </thead>
+                <tbody id="market-data">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function fetchMarketData() {
+            try {
+                const response = await fetch('/api/v1/assets/');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const tbody = document.getElementById('market-data');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No assets found in database.</td></tr>';
+                    return;
+                }
+
+                data.forEach(asset => {
+                    const tr = document.createElement('tr');
+                    
+                    let badgeClass = 'bg-secondary';
+                    let recText = 'AWAITING SIGNAL';
+                    let volText = '-';
+
+                    if (asset.sig) {
+                        recText = asset.sig.rec;
+                        volText = asset.sig.vol;
+                        if (recText === 'BUY') badgeClass = 'bg-success';
+                        else if (recText === 'SELL') badgeClass = 'bg-danger';
+                        else if (recText === 'HOLD') badgeClass = 'bg-warning text-dark';
+                    }
+
+                    tr.innerHTML = `
+                        <td class="fw-bold">${asset.tkr}</td>
+                        <td>${asset.name}</td>
+                        <td>$${parseFloat(asset.prc).toFixed(2)}</td>
+                        <td><span class="badge ${badgeClass}">${recText}</span></td>
+                        <td>${volText}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Fetch failed:", error);
+                const tbody = document.getElementById('market-data');
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Failed to load data. Ensure you are logged in and the server is running.</td></tr>`;
+            }
+        }
+
+        fetchMarketData();
+        setInterval(fetchMarketData, 60000);
+    </script>
+</body>
+</html>

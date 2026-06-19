@@ -1,0 +1,8 @@
+Django>=4.2.0
+djangorestframework
+yfinance
+groq
+python-dotenv
+celery
+django-celery-beat
+redis
