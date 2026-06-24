@@ -5,9 +5,8 @@ from dotenv import load_dotenv
 from groq import Groq
 from .models import Asset, Signal
 
-load_dotenv()
-
-client = Groq(api_key=os.environ.get("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"))
+load_dotenv() 
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def generate_ai_signal(tkr):
     try:
